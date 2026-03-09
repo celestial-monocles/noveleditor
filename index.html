@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Korean Novel Chapter Editor - Multi-Pattern Split</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="google" content="notranslate">
+<!-- Include Alpine.js -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>
+  * {
+    touch-action: manipulation;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f4f4f4;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+    padding-bottom: 100px;
+  }
+
+  #chapter-content {
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 30px;
+    background: #fff;
+    line-height: 1.8;
+    font-size: 1rem;
+    min-height: 500px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  #chapter-content p {
+    margin: 0 0 1.2em 0;
+    line-height: 1.8;
+    white-space: pre-wrap;
+  }
+
+  #chapter-content br {
+    display: block;
+    content: "";
+    margin-top: 0.5em;
+  }
+
+  .nav-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 100;
+    background: #2c3e50;
+    padding: 12px 0;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+  }
+
+  .nav-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    max-width: 1000px;
+    margin: 0 auto;
+    flex-wrap: wrap;
+  }
+
+  .nav-button, .file-upload-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #34495e;
+    border: none;
+    color: white;
+  }
+
+  .nav-button:hover, .file-upload-button:hover {
+    background: #3b82f6;
+    transform: scale(1.1);
+  }
+
+  .nav-button.edit-mode {
+    background: #f39c12;
+  }
+  .nav-button.edit-mode:hover {
+    background: #e67e22;
+  }
+  
+  .nav-button.edit-mode.active {
+    background: #27ae60;
+    box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.3);
+  }
+
+  /* Scroll buttons - special styling */
+  .nav-button.scroll-up, .nav-button.scroll-down {
+    background: #8e44ad;
+  }
+  .nav-button.scroll-up:hover, .nav-button.scroll-down:hover {
+    background: #9b59b6;
+  }
+
+  .file-upload-button {
+    position: relative;
+    overflow: hidden;
+    background: #27ae60;
+  }
+
+  .file-upload-input {
+    position: absolute;
+    left: 0;
+    top: 0;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+  }
+
+  .dropdown {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    width: 90%;
+    max-width: 400px;
+    max-height: 60vh;
+    overflow-y: auto;
+    z-index: 101;
+    border: 1px solid #e0e0e0;
+  }
+
+  .dropdown-header {
+    padding: 15px;
+    font-weight: bold;
+    border-bottom: 2px solid #3b82f6;
+    text-align: center;
+    background: #f8f9fa;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .dropdown-item {
+    padding: 12px 15px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-bottom: 1px solid #e0e0e0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .dropdown-item:hover {
+    background-color: #e8f0fe;
+  }
+
+  .dropdown-item.current-chapter {
+    background-color: #3b82f6;
+    color: white;
+    font-weight: bold;
+  }
+
+  .edit-area {
+    width: 100%;
+    min-height: 600px;
+    padding: 25px;
+    border: 3px solid #f39c12;
+    border-radius: 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.8;
+    resize: vertical;
+    margin: 20px 0;
+    background: #fff;
+    white-space: pre-wrap;
+    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.2);
+  }
+
+  .edit-controls {
+    display: flex;
+    gap: 12px;
+    margin: 20px 0;
+    justify-content: flex-end;
+    max-width: 900px;
+    margin: 20px auto;
+  }
+
+  .save-btn, .cancel-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 15px;
+    font-weight: bold;
+    border: none;
+    color: white;
+  }
+
+  .save-btn {
+    background: #27ae60;
+  }
+  .save-btn:hover { background: #229954; }
+
+  .cancel-btn {
+    background: #e74c3c;
+  }
+  .cancel-btn:hover { background: #c0392b; }
+
+  /* Multi-pattern styles */
+  .patterns-container {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+    background: #f8f9fa;
+  }
+
+  .pattern-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+    background: white;
+    padding: 10px;
+    border-radius: 6px;
+    border-left: 4px solid #3b82f6;
+  }
+
+  .pattern-row input {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 14px;
+  }
+
+  .pattern-row input:focus {
+    border-color: #3b82f6;
+    outline: none;
+  }
+
+  .remove-pattern-btn {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .remove-pattern-btn:hover {
+    background: #c0392b;
+    transform: scale(1.1);
+  }
+
+  .add-pattern-btn {
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 15px 0;
+    transition: all 0.2s;
+  }
+
+  .add-pattern-btn:hover {
+    background: #229954;
+    transform: translateY(-2px);
+  }
+
+  .pattern-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 15px 0;
+    padding: 15px;
+    background: #e8f0fe;
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .preset-chip {
+    background: white;
+    border: 2px solid #3b82f6;
+    color: #3b82f6;
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-family: monospace;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+
+  .preset-chip:hover {
+    background: #3b82f6;
+    color: white;
+  }
+
+  .split-preview {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 15px 0;
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 13px;
+    white-space: pre-wrap;
+    border: 1px solid #e0e0e0;
+  }
+
+  .split-preview-item {
+    padding: 12px;
+    margin: 8px 0;
+    border-left: 4px solid #3b82f6;
+    background: #fff;
+    border-radius: 0 6px 6px 0;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  .split-preview-item:hover {
+    background: #e8f0fe;
+  }
+
+  .split-count {
+    font-weight: bold;
+    color: #3b82f6;
+    margin: 15px 0;
+    font-size: 18px;
+    text-align: center;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+  }
+
+  .modal-content {
+    background: #fff;
+    padding: 30px;
+    border-radius: 16px;
+    max-width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    width: 800px;
+  }
+
+  .modal-title {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+    color: #333;
+    border-bottom: 3px solid #3b82f6;
+    padding-bottom: 10px;
+  }
+
+  .modal-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+  }
+
+  .modal-button {
+    padding: 14px 25px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    flex: 1;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.3s;
+  }
+
+  .modal-button.primary {
+    background: #3b82f6;
+    color: white;
+  }
+  .modal-button.primary:hover { background: #2563eb; }
+
+  .modal-button.secondary {
+    background: #e0e0e0;
+    color: #333;
+  }
+  .modal-button.secondary:hover { background: #d0d0d0; }
+
+  .status-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #3b82f6;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-size: 14px;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .status-indicator.show { opacity: 1; }
+
+  .info-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 25px;
+    background: #3b82f6;
+    color: white;
+    border-radius: 12px 12px 0 0;
+    font-weight: bold;
+  }
+
+  .chapter-title { font-size: 1.2em; }
+  .chapter-stats { font-size: 14px; background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 20px; }
+
+  .edit-mode-indicator {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: #f39c12;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: bold;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    display: none;
+  }
+  .edit-mode-indicator.show { display: block; }
+</style>
+</head>
+<body>
+
+<div class="status-indicator" id="statusIndicator">✓ Saved!</div>
+<div class="edit-mode-indicator" id="editModeIndicator">✏️ Editing Mode</div>
+
+<!-- Manual Split Modal - Multi-Pattern Version -->
+<div id="manualSplitModal" class="modal-overlay" style="display: none;">
+  <div class="modal-content">
+    <h3 class="modal-title">📄 Manual Chapter Split</h3>
+    
+    <div style="margin-bottom: 20px;">
+      <div class="pattern-presets">
+        <span style="font-weight: bold; margin-right: 10px;">Quick Add:</span>
+        
+        <!-- Korean Formats -->
+        <span class="preset-chip" onclick="addPresetPattern('^t\\d+회$')">t1회</span>
+        <span class="preset-chip" onclick="addPresetPattern('^\\d+회$')">1회</span>
+        <span class="preset-chip" onclick="addPresetPattern('^제\\d+화$')">제1화</span>
+        <span class="preset-chip" onclick="addPresetPattern('^\\d+화$')">1화</span>
+        <span class="preset-chip" onclick="addPresetPattern('^제\\d+장$')">제1장</span>
+        <span class="preset-chip" onclick="addPresetPattern('^\\d+장$')">1장</span>
+        
+        <!-- English Episode Formats (INCLUDING EPISODE 1) -->
+        <span class="preset-chip" onclick="addPresetPattern('^Episode \\d+')">Episode 1</span>
+        <span class="preset-chip" onclick="addPresetPattern('^Ep\\.? \\d+')">Ep. 1 / Ep 1</span>
+        <span class="preset-chip" onclick="addPresetPattern('^EPISODE \\d+')">EPISODE 1</span>
+        <span class="preset-chip" onclick="addPresetPattern('^Eps?\\d+')">Ep1 / E1</span>
+        <span class="preset-chip" onclick="addPresetPattern('^The \\d+(?:st|nd|rd|th) Episode')">The 1st Episode</span>
+        
+        <!-- English Chapter Formats -->
+        <span class="preset-chip" onclick="addPresetPattern('^Chapter \\d+')">Chapter 1</span>
+        <span class="preset-chip" onclick="addPresetPattern('^Ch\\.? \\d+')">Ch. 1 / Ch 1</span>
+        <span class="preset-chip" onclick="addPresetPattern('^CHAPTER \\d+')">CHAPTER 1</span>
+        <span class="preset-chip" onclick="addPresetPattern('^Ch\\d+')">Ch1</span>
+        
+        <!-- Ordinal Formats -->
+        <span class="preset-chip" onclick="addPresetPattern('^\\d+(?:st|nd|rd|th) (?:Episode|Chapter|Round)')">1st Episode</span>
+        <span class="preset-chip" onclick="addPresetPattern('^\\d+(?:st|nd|rd|th)')">1st / 2nd / 3rd</span>
+        
+        <!-- Numbers Only -->
+        <span class="preset-chip" onclick="addPresetPattern('^\\d+$')">Just numbers</span>
+        <span class="preset-chip" onclick="addPresetPattern('^\\d+\\.$')">1.</span>
+        <span class="preset-chip" onclick="addPresetPattern('^\\d+\\.\\s')">1. with space</span>
+        <span class="preset-chip" onclick="addPresetPattern('^\\d+\\s+')">1 with space</span>
+        
+        <!-- Round / Part Formats -->
+        <span class="preset-chip" onclick="addPresetPattern('^Round \\d+')">Round 1</span>
+        <span class="preset-chip" onclick="addPresetPattern('^R\\d+')">R1</span>
+        <span class="preset-chip" onclick="addPresetPattern('^Part \\d+')">Part 1</span>
+        <span class="preset-chip" onclick="addPresetPattern('^Section \\d+')">Section 1</span>
+        <span class="preset-chip" onclick="addPresetPattern('^Volume \\d+')">Volume 1</span>
+        
+        <!-- Other Languages -->
+        <span class="preset-chip" onclick="addPresetPattern('^Capítulo \\d+')">Spanish: Capítulo 1</span>
+        <span class="preset-chip" onclick="addPresetPattern('^Chapitre \\d+')">French: Chapitre 1</span>
+        <span class="preset-chip" onclick="addPresetPattern('^Kapitel \\d+')">German: Kapitel 1</span>
+        <span class="preset-chip" onclick="addPresetPattern('^第\\d+章')">Chinese: 第1章</span>
+        <span class="preset-chip" onclick="addPresetPattern('^第\\d+話')">Chinese: 第1話</span>
+      </div>
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0;">
+        <label style="font-weight: bold;">Regex Patterns (any match = new chapter):</label>
+        <button class="add-pattern-btn" onclick="addPatternField()">
+          <span style="font-size: 20px;">+</span> Add Another Pattern
+        </button>
+      </div>
+      
+      <div id="patternsContainer" class="patterns-container">
+        <!-- Pattern rows will be added here dynamically -->
+        <div class="pattern-row" id="pattern-row-0">
+          <input type="text" class="pattern-input" value="^t\d+회$" placeholder="Enter regex pattern...">
+          <button class="remove-pattern-btn" onclick="removePatternField('pattern-row-0')">✕</button>
+        </div>
+      </div>
+      
+      <div class="pattern-hint">
+        <strong>💡 Multiple patterns will be combined with OR logic.</strong> If any pattern matches a line, it becomes a chapter marker.<br>
+        Now includes "Episode 1", "1st Episode", "Ep. 1", and many more formats!
+      </div>
+    </div>
+    
+    <div id="patternPreview" class="split-preview">
+      <em>Enter patterns to preview splits</em>
+    </div>
+    
+    <div id="splitCount" class="split-count"></div>
+    
+    <div id="chapterPreview" class="split-preview" style="max-height: 200px;"></div>
+    
+    <div class="modal-buttons">
+      <button class="modal-button secondary" id="cancelSplitBtn">Cancel</button>
+      <button class="modal-button primary" id="applySplitBtn">Apply Split</button>
+    </div>
+  </div>
+</div>
+
+<!-- Navigation Bar -->
+<div class="nav-container" x-data="{ tocOpen: false }">
+  <div class="nav-bar">
+    <!-- File Upload -->
+    <div class="file-upload-button">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+        <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6z M13 9V3.5L18.5 9H13z"/>
+      </svg>
+      <input type="file" id="fileInput" class="file-upload-input" accept=".txt">
+    </div>
+    
+    <!-- Manual Split -->
+    <button class="nav-button" onclick="window.manualChapterDetection()" title="Manual Split">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M12 3v18"/>
+      </svg>
+    </button>
+    
+    <!-- Table of Contents -->
+    <button class="nav-button" @click="tocOpen = !tocOpen" title="Table of Contents">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+    
+    <!-- Previous Chapter -->
+    <button class="nav-button" onclick="window.prevChapter()" title="Previous Chapter">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+    
+    <!-- Next Chapter -->
+    <button class="nav-button" onclick="window.nextChapter()" title="Next Chapter">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </button>
+    
+    <!-- SCROLL TO TOP BUTTON (FULL PAGE) -->
+    <button class="nav-button scroll-up" onclick="window.scrollToTop()" title="Scroll to Top">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 19V5M5 12l7-7 7 7"/>
+      </svg>
+    </button>
+    
+    <!-- SCROLL TO BOTTOM BUTTON (FULL PAGE) -->
+    <button class="nav-button scroll-down" onclick="window.scrollToBottom()" title="Scroll to Bottom">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 5v14M5 12l7 7 7-7"/>
+      </svg>
+    </button>
+    
+    <!-- EDIT CHAPTER BUTTON (PEN ICON) -->
+    <button class="nav-button edit-mode" id="editButton" onclick="window.toggleEditMode()" title="Edit Current Chapter">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+      </svg>
+    </button>
+    
+    <!-- Download -->
+    <button class="nav-button" onclick="window.downloadFullText()" title="Download">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    </button>
+    
+    <!-- Reset -->
+    <button class="nav-button" onclick="window.resetToOriginal()" title="Reset">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+    </button>
+  </div>
+  
+  <!-- Table of Contents Dropdown -->
+  <div class="dropdown" x-show="tocOpen" @click.outside="tocOpen = false" x-transition>
+    <div class="dropdown-header">📖 Chapters</div>
+    <div id="chapterDropdown"></div>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div id="chapter-content">
+  <article style="padding: 20px;">
+    <h2 style="color: #2c3e50; margin-bottom: 20px;">Korean Novel Chapter Editor</h2>
+    <p><em>Upload a .txt file to begin. The editor preserves all original formatting and line breaks.</em></p>
+    
+    <div style="background: #e8f0fe; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-bottom: 10px;">🔧 How to Use:</h3>
+      <ol style="margin-left: 20px; line-height: 1.8;">
+        <li><strong>Upload</strong> your Korean novel (click 📁 icon)</li>
+        <li><strong>Split chapters</strong> (click ✚ icon) - now supports MULTIPLE regex patterns!</li>
+        <li><strong>Add patterns</strong> for different heading formats like "Episode 1", "Chapter 4", "7th Episode", "1026회", "189"</li>
+        <li><strong>Preview</strong> the splits before applying</li>
+        <li><strong>Navigate</strong> chapters using ◀ ▶ buttons <strong>(now auto-scrolls to top!)</strong></li>
+        <li><strong>Scroll to top/bottom</strong> using the ↑ ↓ buttons (full page scroll)</li>
+        <li><strong>Edit</strong> any chapter - click the ✏️ pen icon on bottom bar</li>
+        <li><strong>Save</strong> edits - changes reflect in full text</li>
+        <li><strong>Download</strong> (💾 icon) and open in Notepad++</li>
+      </ol>
+    </div>
+    
+    <p><strong>Example with mixed heading formats (including Episode 1):</strong></p>
+    <pre style="background: #f5f5f5; padding: 15px; border-radius: 8px; font-family: monospace; line-height: 1.6;">
+Chapter 4
+애당초 이쪽 세상의 개개인에 관해 그렇게 잘 알고 있었다면,
+소설을 통해 이야기를 퍼트리려 하지도 않았을 거다.
+
+Episode 1
+다음 문장이 시작됩니다.
+이렇게 줄바꿈이 유지되어야 합니다.
+
+1026회
+두 번째 장이 시작됩니다.
+모든 문단과 줄바꿈이 그대로 보존됩니다.
+
+7th Episode
+세 번째 장입니다.
+숫자만 있는 경우도 처리 가능합니다.
+
+189
+네 번째 장입니다.
+이제 모든 형식을 한 번에 처리합니다!
+
+Ep. 5
+다섯 번째 장입니다.
+에피소드 약어도 처리합니다.
+    </pre>
+  </article>
+</div>
+
+<!-- Edit Controls -->
+<div id="editControls" style="display: none; max-width: 900px; margin: 20px auto;">
+  <div class="edit-controls">
+    <button class="save-btn" id="saveChapterBtn">💾 Save Changes</button>
+    <button class="cancel-btn" id="cancelEditBtn">✖ Cancel Editing</button>
+  </div>
+  <textarea id="chapterEditor" class="edit-area" placeholder="Edit chapter content here..."></textarea>
+</div>
+
+<script>
+  // ============================================
+  // GLOBAL VARIABLES
+  // ============================================
+  let originalFullText = '';
+  let currentFullText = '';
+  let chapters = [];
+  let originalChapters = [];
+  let currentIndex = 0;
+  let isEditing = false;
+  let fileName = '';
+  let patternCounter = 1; // For generating unique pattern row IDs
+  
+  // DOM Elements
+  const fileInput = document.getElementById("fileInput");
+  const chapterContent = document.getElementById("chapter-content");
+  const chapterDropdown = document.getElementById("chapterDropdown");
+  const statusIndicator = document.getElementById("statusIndicator");
+  const editModeIndicator = document.getElementById("editModeIndicator");
+  const editButton = document.getElementById("editButton");
+  const manualSplitModal = document.getElementById("manualSplitModal");
+  const patternsContainer = document.getElementById("patternsContainer");
+  const patternPreview = document.getElementById("patternPreview");
+  const splitCount = document.getElementById("splitCount");
+  const chapterPreview = document.getElementById("chapterPreview");
+  const cancelSplitBtn = document.getElementById("cancelSplitBtn");
+  const applySplitBtn = document.getElementById("applySplitBtn");
+  const editControls = document.getElementById("editControls");
+  const chapterEditor = document.getElementById("chapterEditor");
+  const saveChapterBtn = document.getElementById("saveChapterBtn");
+  const cancelEditBtn = document.getElementById("cancelEditBtn");
+
+  // ============================================
+  // SCROLL FUNCTIONS
+  // ============================================
+  
+  window.scrollToTop = function() {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
+  window.scrollToBottom = function() {
+    window.scrollTo({
+      top: document.body.scrollHeight,
+      behavior: 'smooth'
+    });
+  };
+
+  // ============================================
+  // PATTERN MANAGEMENT FUNCTIONS
+  // ============================================
+  
+  window.addPatternField = function(pattern = '') {
+    const rowId = `pattern-row-${patternCounter}`;
+    const patternRow = document.createElement('div');
+    patternRow.className = 'pattern-row';
+    patternRow.id = rowId;
+    
+    patternRow.innerHTML = `
+      <input type="text" class="pattern-input" value="${pattern.replace(/"/g, '&quot;')}" placeholder="Enter regex pattern...">
+      <button class="remove-pattern-btn" onclick="removePatternField('${rowId}')">✕</button>
+    `;
+    
+    patternsContainer.appendChild(patternRow);
+    
+    const input = patternRow.querySelector('input');
+    input.addEventListener('input', updateMultiPatternPreview);
+    
+    patternCounter++;
+    updateMultiPatternPreview();
+  };
+
+  window.removePatternField = function(rowId) {
+    const row = document.getElementById(rowId);
+    if (row) {
+      row.remove();
+      updateMultiPatternPreview();
+      
+      // If no patterns left, add a default one
+      if (patternsContainer.children.length === 0) {
+        addPatternField('^t\\d+회$');
+      }
+    }
+  };
+
+  window.addPresetPattern = function(pattern) {
+    addPatternField(pattern);
+  };
+
+  function getAllPatterns() {
+    const inputs = document.querySelectorAll('#patternsContainer .pattern-input');
+    const patterns = [];
+    inputs.forEach(input => {
+      const value = input.value.trim();
+      if (value) {
+        patterns.push(value);
+      }
+    });
+    return patterns;
+  }
+
+  // ============================================
+  // UTILITY FUNCTIONS
+  // ============================================
+  
+  function showStatus(message) {
+    statusIndicator.textContent = message;
+    statusIndicator.classList.add('show');
+    setTimeout(() => {
+      statusIndicator.classList.remove('show');
+    }, 2000);
+  }
+
+  function escapeHtml(text) {
+    if (typeof text !== 'string') return '';
+    return text.replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#039;');
+  }
+
+  // ============================================
+  // FILE HANDLING
+  // ============================================
+  
+  fileInput.addEventListener("change", function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    fileName = file.name;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      originalFullText = e.target.result;
+      currentFullText = originalFullText;
+      
+      chapters = [originalFullText];
+      originalChapters = [originalFullText];
+      
+      currentIndex = 0;
+      if (isEditing) exitEditMode();
+      renderChapter();
+      populateDropdown();
+      showStatus(`Loaded: ${fileName}`);
+    };
+    
+    reader.readAsText(file, 'UTF-8');
+  });
+
+  // ============================================
+  // RENDER CHAPTER - WITH AUTO-SCROLL TO TOP!
+  // ============================================
+  
+  function renderChapter() {
+    if (chapters.length > 0 && currentIndex >= 0 && currentIndex < chapters.length) {
+      const chapterText = chapters[currentIndex];
+      
+      const lines = chapterText.split('\n');
+      const title = lines[0]?.trim() || `Chapter ${currentIndex + 1}`;
+      
+      let html = `<div class="info-bar">
+        <span class="chapter-title">📑 ${escapeHtml(title)}</span>
+        <span class="chapter-stats">${currentIndex + 1} / ${chapters.length}</span>
+      </div>`;
+      
+      html += '<div style="padding: 25px; font-family: inherit; white-space: pre-wrap; line-height: 1.8;">';
+      
+      const paragraphs = chapterText.split(/\n\s*\n/);
+      
+      paragraphs.forEach((para) => {
+        if (para.trim()) {
+          const lines = para.split('\n');
+          html += '<p style="margin: 0 0 1.2em 0;">';
+          lines.forEach((line, lineIdx) => {
+            if (lineIdx > 0) html += '<br>';
+            html += escapeHtml(line);
+          });
+          html += '</p>';
+        }
+      });
+      
+      html += '</div>';
+      
+      chapterContent.innerHTML = html;
+      
+      // AUTO-SCROLL TO TOP WHEN CHAPTER LOADS
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  }
+
+  // ============================================
+  // CHAPTER NAVIGATION
+  // ============================================
+  
+  window.prevChapter = function() {
+    if (currentIndex > 0) {
+      if (isEditing) exitEditMode();
+      currentIndex--;
+      renderChapter();
+      updateDropdownHighlight();
+      updateEditButtonState();
+      showStatus(`Chapter ${currentIndex + 1} of ${chapters.length}`);
+    }
+  };
+
+  window.nextChapter = function() {
+    if (currentIndex < chapters.length - 1) {
+      if (isEditing) exitEditMode();
+      currentIndex++;
+      renderChapter();
+      updateDropdownHighlight();
+      updateEditButtonState();
+      showStatus(`Chapter ${currentIndex + 1} of ${chapters.length}`);
+    }
+  };
+
+  function populateDropdown() {
+    chapterDropdown.innerHTML = "";
+    chapters.forEach((ch, i) => {
+      const lines = ch.split('\n');
+      const title = lines[0]?.trim() || `Chapter ${i + 1}`;
+      
+      const item = document.createElement("div");
+      item.className = `dropdown-item ${i === currentIndex ? 'current-chapter' : ''}`;
+      item.textContent = title.length > 40 ? title.substring(0, 37) + '...' : title;
+      item.onclick = () => {
+        if (isEditing) exitEditMode();
+        currentIndex = i;
+        renderChapter();
+        updateDropdownHighlight();
+        updateEditButtonState();
+        document.querySelector('[x-data]').__x.$data.tocOpen = false;
+        
+        // Auto-scroll to top when selecting from TOC
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+        
+        showStatus(`Chapter ${currentIndex + 1} of ${chapters.length}`);
+      };
+      chapterDropdown.appendChild(item);
+    });
+  }
+
+  function updateDropdownHighlight() {
+    const items = document.querySelectorAll('.dropdown-item');
+    items.forEach((item, index) => {
+      if (index === currentIndex) {
+        item.classList.add('current-chapter');
+      } else {
+        item.classList.remove('current-chapter');
+      }
+    });
+  }
+
+  // ============================================
+  // EDITING FUNCTIONS
+  // ============================================
+  
+  window.toggleEditMode = function() {
+    if (chapters.length === 0) {
+      alert("Please load a file first!");
+      return;
+    }
+    
+    if (isEditing) {
+      if (confirm("Exit edit mode? Any unsaved changes will be lost.")) {
+        exitEditMode();
+      }
+    } else {
+      enterEditMode();
+    }
+  };
+  
+  function enterEditMode() {
+    isEditing = true;
+    editControls.style.display = 'block';
+    chapterContent.style.display = 'none';
+    editModeIndicator.classList.add('show');
+    editButton.classList.add('active');
+    chapterEditor.value = chapters[currentIndex];
+  }
+
+  function exitEditMode() {
+    isEditing = false;
+    editControls.style.display = 'none';
+    chapterContent.style.display = 'block';
+    editModeIndicator.classList.remove('show');
+    editButton.classList.remove('active');
+  }
+
+  function updateEditButtonState() {
+    if (isEditing) {
+      editButton.classList.add('active');
+    } else {
+      editButton.classList.remove('active');
+    }
+  }
+
+  saveChapterBtn.addEventListener('click', function() {
+    if (!isEditing) return;
+    
+    const editedContent = chapterEditor.value;
+    chapters[currentIndex] = editedContent;
+    rebuildFullText();
+    exitEditMode();
+    renderChapter();
+    populateDropdown();
+    showStatus('Chapter saved!');
+  });
+
+  cancelEditBtn.addEventListener('click', function() {
+    exitEditMode();
+    renderChapter();
+  });
+
+  function rebuildFullText() {
+    currentFullText = chapters.join('\n\n');
+  }
+
+  // ============================================
+  // MULTI-PATTERN CHAPTER SPLITTING
+  // ============================================
+  
+  window.manualChapterDetection = function() {
+    if (chapters.length === 0 && !originalFullText) {
+      alert("Please upload a file first!");
+      return;
+    }
+    
+    if (isEditing) exitEditMode();
+    
+    const textToSplit = currentFullText || originalFullText;
+    updateMultiPatternPreview();
+    manualSplitModal.style.display = 'flex';
+  };
+
+  // Add input event listeners to existing pattern inputs
+  document.querySelectorAll('#patternsContainer .pattern-input').forEach(input => {
+    input.addEventListener('input', updateMultiPatternPreview);
+  });
+
+  function updateMultiPatternPreview() {
+    const patterns = getAllPatterns();
+    const text = currentFullText || originalFullText;
+    
+    if (!text) return;
+    
+    try {
+      // Create combined regex from all patterns
+      const validPatterns = [];
+      const errors = [];
+      
+      patterns.forEach((pattern, idx) => {
+        if (pattern.trim()) {
+          try {
+            new RegExp(pattern, 'gm');
+            validPatterns.push(pattern);
+          } catch (e) {
+            errors.push(`Pattern ${idx + 1}: ${e.message}`);
+          }
+        }
+      });
+      
+      if (errors.length > 0) {
+        patternPreview.innerHTML = `<span style="color: red;">${errors.join('<br>')}</span>`;
+        return;
+      }
+      
+      if (validPatterns.length === 0) {
+        patternPreview.innerHTML = '<em>Enter at least one valid pattern</em>';
+        splitCount.innerHTML = '';
+        chapterPreview.innerHTML = '';
+        return;
+      }
+      
+      // Find all chapter markers using all patterns
+      const lines = text.split('\n');
+      const chapterMarkers = [];
+      
+      lines.forEach((line, index) => {
+        for (const pattern of validPatterns) {
+          const regex = new RegExp(pattern, 'gm');
+          if (regex.test(line)) {
+            chapterMarkers.push({
+              lineIndex: index,
+              text: line,
+              pattern: pattern
+            });
+            break; // Stop after first matching pattern
+          }
+        }
+      });
+      
+      // Sort markers by line index
+      chapterMarkers.sort((a, b) => a.lineIndex - b.lineIndex);
+      
+      if (chapterMarkers.length === 0) {
+        patternPreview.innerHTML = '<em>No matches found with any pattern</em>';
+        splitCount.innerHTML = 'Will create 1 chapter (no splits)';
+        chapterPreview.innerHTML = '<em>The entire text will be one chapter.</em>';
+        
+        window.tempSplitData = { fullText: text, markers: [], chapters: [text] };
+      } else {
+        // Show markers with their matching patterns
+        patternPreview.innerHTML = `<strong>Found ${chapterMarkers.length} chapter markers:</strong><br><br>` +
+          chapterMarkers.slice(0, 15).map((m, i) => 
+            `<div class="split-preview-item" title="Matched by: ${m.pattern}">
+              <strong>${i+1}.</strong> Line ${m.lineIndex+1}: ${escapeHtml(m.text.substring(0, 60))}${m.text.length > 60 ? '...' : ''}
+              <br><small style="color: #666;">Pattern: ${escapeHtml(m.pattern)}</small>
+            </div>`
+          ).join('') +
+          (chapterMarkers.length > 15 ? `<div>... and ${chapterMarkers.length - 15} more</div>` : '');
+        
+        const splitChapters = splitTextByMarkers(text, chapterMarkers);
+        splitCount.innerHTML = `Will create <strong>${splitChapters.length}</strong> chapters using ${validPatterns.length} pattern(s)`;
+        
+        chapterPreview.innerHTML = '<strong>Chapter Preview:</strong><br><br>' +
+          splitChapters.slice(0, 8).map((ch, i) => {
+            const firstLine = ch.split('\n')[0];
+            return `<div class="split-preview-item" onclick="previewChapter(${i})">
+              <strong>Ch ${i+1}:</strong> ${escapeHtml(firstLine.substring(0, 60))}${firstLine.length > 60 ? '...' : ''}
+            </div>`;
+          }).join('') +
+          (splitChapters.length > 8 ? `<div>... and ${splitChapters.length - 8} more chapters</div>` : '');
+        
+        window.tempSplitData = { fullText: text, markers: chapterMarkers, chapters: splitChapters };
+      }
+    } catch (error) {
+      patternPreview.innerHTML = `<span style="color: red;">Error: ${error.message}</span>`;
+    }
+  }
+
+  function splitTextByMarkers(text, markers) {
+    const lines = text.split('\n');
+    const chapters = [];
+    let currentChapter = [];
+    let markerIndex = 0;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      if (markerIndex < markers.length && i === markers[markerIndex].lineIndex) {
+        if (currentChapter.length > 0) {
+          chapters.push(currentChapter.join('\n'));
+        }
+        currentChapter = [line];
+        markerIndex++;
+      } else {
+        if (currentChapter.length > 0 || chapters.length === 0) {
+          currentChapter.push(line);
+        }
+      }
+    }
+    
+    if (currentChapter.length > 0) {
+      chapters.push(currentChapter.join('\n'));
+    }
+    
+    return chapters.length > 0 ? chapters : [text];
+  }
+
+  window.previewChapter = function(index) {
+    if (window.tempSplitData?.chapters[index]) {
+      const preview = window.tempSplitData.chapters[index].substring(0, 300);
+      alert('Chapter ' + (index + 1) + ':\n\n' + preview + (preview.length >= 300 ? '\n\n...' : ''));
+    }
+  };
+
+  cancelSplitBtn.addEventListener('click', function() {
+    manualSplitModal.style.display = 'none';
+    window.tempSplitData = null;
+  });
+
+  applySplitBtn.addEventListener('click', function() {
+    if (!window.tempSplitData) {
+      alert('No split data available');
+      return;
+    }
+    
+    chapters = window.tempSplitData.chapters;
+    originalChapters = [...chapters];
+    currentIndex = 0;
+    
+    rebuildFullText();
+    if (isEditing) exitEditMode();
+    renderChapter();
+    populateDropdown();
+    manualSplitModal.style.display = 'none';
+    showStatus(`Split into ${chapters.length} chapters`);
+    
+    window.tempSplitData = null;
+  });
+
+  // ============================================
+  // DOWNLOAD AND RESET
+  // ============================================
+  
+  window.downloadFullText = function() {
+    if (chapters.length === 0) {
+      alert('No file loaded');
+      return;
+    }
+    
+    rebuildFullText();
+    
+    const blob = new Blob([currentFullText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName ? 'edited_' + fileName : 'edited_novel.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showStatus('Downloaded!');
+  };
+
+  window.resetToOriginal = function() {
+    if (!originalFullText) {
+      alert('No original file');
+      return;
+    }
+    
+    if (confirm('Reset all changes?')) {
+      currentFullText = originalFullText;
+      chapters = [originalFullText];
+      originalChapters = [originalFullText];
+      currentIndex = 0;
+      if (isEditing) exitEditMode();
+      renderChapter();
+      populateDropdown();
+      showStatus('Reset to original');
+    }
+  };
+
+  // Initialize with one pattern
+  window.onload = function() {
+    // Clear and add default pattern
+    patternsContainer.innerHTML = '';
+    addPatternField('^t\\d+회$');
+  };
+</script>
+</body>
+</html>
