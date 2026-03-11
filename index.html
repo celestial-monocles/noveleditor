@@ -135,7 +135,7 @@
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     width: 90%;
-    max-width: 400px;
+    max-width: 500px;
     max-height: 60vh;
     overflow-y: auto;
     z-index: 101;
@@ -156,18 +156,65 @@
     cursor: pointer;
     transition: background-color 0.2s;
     border-bottom: 1px solid #e0e0e0;
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.4;
+    position: relative;
+  }
+
+  /* Tooltip on hover for long titles */
+  .dropdown-item:hover::after {
+    content: attr(data-full-title);
+    position: absolute;
+    left: 100%;
+    top: 0;
+    background: #2c3e50;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
     white-space: nowrap;
+    z-index: 1000;
+    margin-left: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    pointer-events: none;
+    max-width: 300px;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .dropdown-item:hover {
-    background-color: #e8f0fe;
+  /* Mobile tooltip positioning */
+  @media (max-width: 768px) {
+    .dropdown-item:hover::after {
+      left: 0;
+      top: 100%;
+      margin-left: 0;
+      margin-top: 5px;
+      white-space: normal;
+      max-width: 90vw;
+    }
   }
 
   .dropdown-item.current-chapter {
     background-color: #3b82f6;
     color: white;
+    font-weight: bold;
+  }
+
+  /* Indicator for long titles */
+  .dropdown-item.long-title {
+    position: relative;
+    padding-right: 25px;
+  }
+
+  .dropdown-item.long-title::before {
+    content: "⋯";
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: inherit;
     font-weight: bold;
   }
 
@@ -292,6 +339,15 @@
   .add-pattern-btn:hover {
     background: #229954;
     transform: translateY(-2px);
+  }
+
+  /* Clear patterns button - red */
+  .add-pattern-btn.clear-patterns {
+    background: #e74c3c;
+    margin-left: 10px;
+  }
+  .add-pattern-btn.clear-patterns:hover {
+    background: #c0392b;
   }
 
   .pattern-presets {
@@ -492,7 +548,7 @@
         <span class="preset-chip" onclick="addPresetPattern('^제\\d+장$')">제1장</span>
         <span class="preset-chip" onclick="addPresetPattern('^\\d+장$')">1장</span>
         
-        <!-- English Episode Formats (INCLUDING EPISODE 1) -->
+        <!-- English Episode Formats -->
         <span class="preset-chip" onclick="addPresetPattern('^Episode \\d+')">Episode 1</span>
         <span class="preset-chip" onclick="addPresetPattern('^Ep\\.? \\d+')">Ep. 1 / Ep 1</span>
         <span class="preset-chip" onclick="addPresetPattern('^EPISODE \\d+')">EPISODE 1</span>
@@ -530,24 +586,25 @@
         <span class="preset-chip" onclick="addPresetPattern('^第\\d+話')">Chinese: 第1話</span>
       </div>
       
-      <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 0; flex-wrap: wrap; gap: 10px;">
         <label style="font-weight: bold;">Regex Patterns (any match = new chapter):</label>
-        <button class="add-pattern-btn" onclick="addPatternField()">
-          <span style="font-size: 20px;">+</span> Add Another Pattern
-        </button>
+        <div style="display: flex; gap: 10px;">
+          <button class="add-pattern-btn" onclick="addPatternField()">
+            <span style="font-size: 20px;">+</span> Add Pattern
+          </button>
+          <button class="add-pattern-btn clear-patterns" onclick="clearSavedPatterns()">
+            <span style="font-size: 16px;">🗑️</span> Clear Saved
+          </button>
+        </div>
       </div>
       
       <div id="patternsContainer" class="patterns-container">
         <!-- Pattern rows will be added here dynamically -->
-        <div class="pattern-row" id="pattern-row-0">
-          <input type="text" class="pattern-input" value="^t\d+회$" placeholder="Enter regex pattern...">
-          <button class="remove-pattern-btn" onclick="removePatternField('pattern-row-0')">✕</button>
-        </div>
       </div>
       
       <div class="pattern-hint">
-        <strong>💡 Multiple patterns will be combined with OR logic.</strong> If any pattern matches a line, it becomes a chapter marker.<br>
-        Now includes "Episode 1", "1st Episode", "Ep. 1", and many more formats!
+        <strong>💡 Patterns are automatically saved!</strong> Your custom regex patterns will persist between sessions.<br>
+        Click "Clear Saved" to reset to default patterns if something doesn't work.
       </div>
     </div>
     
@@ -605,21 +662,21 @@
       </svg>
     </button>
     
-    <!-- SCROLL TO TOP BUTTON (FULL PAGE) -->
+    <!-- SCROLL TO TOP BUTTON -->
     <button class="nav-button scroll-up" onclick="window.scrollToTop()" title="Scroll to Top">
       <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M12 19V5M5 12l7-7 7 7"/>
       </svg>
     </button>
     
-    <!-- SCROLL TO BOTTOM BUTTON (FULL PAGE) -->
+    <!-- SCROLL TO BOTTOM BUTTON -->
     <button class="nav-button scroll-down" onclick="window.scrollToBottom()" title="Scroll to Bottom">
       <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M12 5v14M5 12l7 7 7-7"/>
       </svg>
     </button>
     
-    <!-- EDIT CHAPTER BUTTON (PEN ICON) -->
+    <!-- EDIT CHAPTER BUTTON -->
     <button class="nav-button edit-mode" id="editButton" onclick="window.toggleEditMode()" title="Edit Current Chapter">
       <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
@@ -661,43 +718,16 @@
       <h3 style="margin-bottom: 10px;">🔧 How to Use:</h3>
       <ol style="margin-left: 20px; line-height: 1.8;">
         <li><strong>Upload</strong> your Korean novel (click 📁 icon)</li>
-        <li><strong>Split chapters</strong> (click ✚ icon) - now supports MULTIPLE regex patterns!</li>
-        <li><strong>Add patterns</strong> for different heading formats like "Episode 1", "Chapter 4", "7th Episode", "1026회", "189"</li>
+        <li><strong>Split chapters</strong> (click ✚ icon) - supports MULTIPLE regex patterns!</li>
+        <li><strong>Patterns auto-save</strong> - your custom regex patterns persist between sessions</li>
+        <li><strong>Clear saved</strong> if patterns don't work - reset to defaults</li>
         <li><strong>Preview</strong> the splits before applying</li>
-        <li><strong>Navigate</strong> chapters using ◀ ▶ buttons <strong>(now auto-scrolls to top!)</strong></li>
-        <li><strong>Scroll to top/bottom</strong> using the ↑ ↓ buttons (full page scroll)</li>
-        <li><strong>Edit</strong> any chapter - click the ✏️ pen icon on bottom bar</li>
-        <li><strong>Save</strong> edits - changes reflect in full text</li>
+        <li><strong>Navigate</strong> chapters using ◀ ▶ buttons (auto-scrolls to top!)</li>
+        <li><strong>Scroll to top/bottom</strong> using the ↑ ↓ buttons</li>
+        <li><strong>Edit</strong> any chapter - click the ✏️ pen icon</li>
         <li><strong>Download</strong> (💾 icon) and open in Notepad++</li>
       </ol>
     </div>
-    
-    <p><strong>Example with mixed heading formats (including Episode 1):</strong></p>
-    <pre style="background: #f5f5f5; padding: 15px; border-radius: 8px; font-family: monospace; line-height: 1.6;">
-Chapter 4
-애당초 이쪽 세상의 개개인에 관해 그렇게 잘 알고 있었다면,
-소설을 통해 이야기를 퍼트리려 하지도 않았을 거다.
-
-Episode 1
-다음 문장이 시작됩니다.
-이렇게 줄바꿈이 유지되어야 합니다.
-
-1026회
-두 번째 장이 시작됩니다.
-모든 문단과 줄바꿈이 그대로 보존됩니다.
-
-7th Episode
-세 번째 장입니다.
-숫자만 있는 경우도 처리 가능합니다.
-
-189
-네 번째 장입니다.
-이제 모든 형식을 한 번에 처리합니다!
-
-Ep. 5
-다섯 번째 장입니다.
-에피소드 약어도 처리합니다.
-    </pre>
   </article>
 </div>
 
@@ -721,8 +751,11 @@ Ep. 5
   let currentIndex = 0;
   let isEditing = false;
   let fileName = '';
-  let patternCounter = 1; // For generating unique pattern row IDs
-  
+  let patternCounter = 1;
+
+  // Storage key for patterns
+  const PATTERNS_STORAGE_KEY = 'novelEditor_patterns';
+
   // DOM Elements
   const fileInput = document.getElementById("fileInput");
   const chapterContent = document.getElementById("chapter-content");
@@ -747,17 +780,45 @@ Ep. 5
   // ============================================
   
   window.scrollToTop = function() {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   window.scrollToBottom = function() {
-    window.scrollTo({
-      top: document.body.scrollHeight,
-      behavior: 'smooth'
-    });
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  };
+
+  // ============================================
+  // PATTERN PERSISTENCE FUNCTIONS
+  // ============================================
+
+  function savePatternsToStorage() {
+    const patterns = getAllPatterns();
+    try {
+      localStorage.setItem(PATTERNS_STORAGE_KEY, JSON.stringify(patterns));
+    } catch (e) {
+      console.warn('Could not save patterns to storage:', e);
+    }
+  }
+
+  function loadPatternsFromStorage() {
+    try {
+      const saved = localStorage.getItem(PATTERNS_STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.warn('Could not load patterns from storage:', e);
+    }
+    return null;
+  }
+
+  window.clearSavedPatterns = function() {
+    if (confirm('Clear all saved regex patterns? This will reset to default patterns.')) {
+      localStorage.removeItem(PATTERNS_STORAGE_KEY);
+      patternsContainer.innerHTML = '';
+      addPatternField('^t\\d+회$');
+      showStatus('Patterns reset to default');
+    }
   };
 
   // ============================================
@@ -778,10 +839,14 @@ Ep. 5
     patternsContainer.appendChild(patternRow);
     
     const input = patternRow.querySelector('input');
-    input.addEventListener('input', updateMultiPatternPreview);
+    input.addEventListener('input', function() {
+      updateMultiPatternPreview();
+      savePatternsToStorage();
+    });
     
     patternCounter++;
     updateMultiPatternPreview();
+    savePatternsToStorage();
   };
 
   window.removePatternField = function(rowId) {
@@ -789,8 +854,8 @@ Ep. 5
     if (row) {
       row.remove();
       updateMultiPatternPreview();
+      savePatternsToStorage();
       
-      // If no patterns left, add a default one
       if (patternsContainer.children.length === 0) {
         addPatternField('^t\\d+회$');
       }
@@ -811,6 +876,21 @@ Ep. 5
       }
     });
     return patterns;
+  }
+
+  function initializePatterns() {
+    const savedPatterns = loadPatternsFromStorage();
+    
+    if (savedPatterns && savedPatterns.length > 0) {
+      patternsContainer.innerHTML = '';
+      savedPatterns.forEach(pattern => {
+        addPatternField(pattern);
+      });
+      showStatus(`Loaded ${savedPatterns.length} saved patterns`);
+    } else {
+      patternsContainer.innerHTML = '';
+      addPatternField('^t\\d+회$');
+    }
   }
 
   // ============================================
@@ -863,7 +943,7 @@ Ep. 5
   });
 
   // ============================================
-  // RENDER CHAPTER - WITH AUTO-SCROLL TO TOP!
+  // RENDER CHAPTER
   // ============================================
   
   function renderChapter() {
@@ -898,11 +978,7 @@ Ep. 5
       
       chapterContent.innerHTML = html;
       
-      // AUTO-SCROLL TO TOP WHEN CHAPTER LOADS
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
 
@@ -940,7 +1016,15 @@ Ep. 5
       
       const item = document.createElement("div");
       item.className = `dropdown-item ${i === currentIndex ? 'current-chapter' : ''}`;
-      item.textContent = title.length > 40 ? title.substring(0, 37) + '...' : title;
+      item.setAttribute('data-full-title', title);
+      
+      const displayTitle = title.length > 50 ? title.substring(0, 47) + '...' : title;
+      item.textContent = displayTitle;
+      
+      if (title.length > 50) {
+        item.classList.add('long-title');
+      }
+      
       item.onclick = () => {
         if (isEditing) exitEditMode();
         currentIndex = i;
@@ -948,13 +1032,7 @@ Ep. 5
         updateDropdownHighlight();
         updateEditButtonState();
         document.querySelector('[x-data]').__x.$data.tocOpen = false;
-        
-        // Auto-scroll to top when selecting from TOC
-        window.scrollTo({
-          top: 0,
-          behavior: 'smooth'
-        });
-        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         showStatus(`Chapter ${currentIndex + 1} of ${chapters.length}`);
       };
       chapterDropdown.appendChild(item);
@@ -1054,11 +1132,6 @@ Ep. 5
     manualSplitModal.style.display = 'flex';
   };
 
-  // Add input event listeners to existing pattern inputs
-  document.querySelectorAll('#patternsContainer .pattern-input').forEach(input => {
-    input.addEventListener('input', updateMultiPatternPreview);
-  });
-
   function updateMultiPatternPreview() {
     const patterns = getAllPatterns();
     const text = currentFullText || originalFullText;
@@ -1066,7 +1139,6 @@ Ep. 5
     if (!text) return;
     
     try {
-      // Create combined regex from all patterns
       const validPatterns = [];
       const errors = [];
       
@@ -1093,7 +1165,6 @@ Ep. 5
         return;
       }
       
-      // Find all chapter markers using all patterns
       const lines = text.split('\n');
       const chapterMarkers = [];
       
@@ -1106,12 +1177,11 @@ Ep. 5
               text: line,
               pattern: pattern
             });
-            break; // Stop after first matching pattern
+            break;
           }
         }
       });
       
-      // Sort markers by line index
       chapterMarkers.sort((a, b) => a.lineIndex - b.lineIndex);
       
       if (chapterMarkers.length === 0) {
@@ -1121,7 +1191,6 @@ Ep. 5
         
         window.tempSplitData = { fullText: text, markers: [], chapters: [text] };
       } else {
-        // Show markers with their matching patterns
         patternPreview.innerHTML = `<strong>Found ${chapterMarkers.length} chapter markers:</strong><br><br>` +
           chapterMarkers.slice(0, 15).map((m, i) => 
             `<div class="split-preview-item" title="Matched by: ${m.pattern}">
@@ -1254,11 +1323,9 @@ Ep. 5
     }
   };
 
-  // Initialize with one pattern
+  // Initialize
   window.onload = function() {
-    // Clear and add default pattern
-    patternsContainer.innerHTML = '';
-    addPatternField('^t\\d+회$');
+    initializePatterns();
   };
 </script>
 </body>
